@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>에뛰드 AI 챗봇</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fcf2f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #e84c8b;
+            text-align: center;
+        }
+        .test-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .test-buttons button {
+            padding: 10px 15px;
+            background-color: #e84c8b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .test-result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            display: none;
+        }
+        .chat-container {
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 15px;
+            max-width: 80%;
+        }
+        .user-message {
+            background-color: #e84c8b;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+        .bot-message {
+            background-color: #f0f0f0;
+        }
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .chat-input button {
+            padding: 10px 15px;
+            background-color: #e84c8b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .typing-indicator {
+            display: none;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 15px;
+            background-color: #f0f0f0;
+        }
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #888;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: typing 1s infinite;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+            margin-right: 0;
+        }
+        @keyframes typing {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>에뛰드 AI 챗봇</h1>
+        
+        <div class="test-buttons">
+            <button onclick="testBigQuery()">BigQuery 연결 테스트</button>
+            <button onclick="testVertexAI()">Vertex AI 연결 테스트</button>
+        </div>
+        
+        <div id="testResult" class="test-result">
+            <h3>테스트 결과</h3>
+            <pre id="testResultContent"></pre>
+        </div>
+        
+        <div class="chat-container">
+            <h2>에뛰드 챗봇과 대화하기</h2>
+            <div id="chatMessages" class="chat-messages">
+                <div class="message bot-message">
+                    안녕하세요! 에뛰드 AI 어시스턴트입니다. 어떤 제품에 대해 알고 싶으신가요?
+                </div>
+            </div>
+            <div id="typingIndicator" class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="userInput" placeholder="메시지를 입력하세요..." />
+                <button onclick="sendMessageStream()">전송</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 세션 ID 생성 (실제 구현에서는 서버에서 관리)
+        const sessionId = 'session_' + Math.random().toString(36).substring(2, 9);
+        
+        function testBigQuery() {
+            document.getElementById('testResult').style.display = 'block';
+            document.getElementById('testResultContent').innerHTML = '테스트 중...';
+            
+            fetch('/test/bigquery')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('testResultContent').innerHTML = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById('testResultContent').innerHTML = '오류 발생: ' + error;
+                });
+        }
+        
+        function testVertexAI() {
+            document.getElementById('testResult').style.display = 'block';
+            document.getElementById('testResultContent').innerHTML = '테스트 중...';
+            
+            fetch('/test/vertex')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('testResultContent').innerHTML = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById('testResultContent').innerHTML = '오류 발생: ' + error;
+                });
+        }
+        
+        // 기존 메시지 전송 함수 (참고용으로 남겨둠)
+        function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const message = userInput.value.trim();
+            
+            if (message === '') return;
+            
+            // 사용자 메시지 표시
+            appendMessage(message, 'user');
+            userInput.value = '';
+            
+            document.getElementById('typingIndicator').style.display = 'block';
+            
+            // API 호출
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    session_id: sessionId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('typingIndicator').style.display = 'none';
+                
+                if (data.status === 'error') {
+                    appendMessage('죄송합니다, 오류가 발생했습니다: ' + data.message, 'bot');
+                } else {
+                    appendMessage(data.response, 'bot');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('typingIndicator').style.display = 'none';
+                appendMessage('죄송합니다, 응답 처리 중 오류가 발생했습니다.', 'bot');
+            });
+        }
+        
+        // 스트리밍 메시지 전송 함수
+        function sendMessageStream() {
+            const userInput = document.getElementById('userInput');
+            const message = userInput.value.trim();
+            
+            if (message === '') return;
+            
+            // 사용자 메시지 표시
+            appendMessage(message, 'user');
+            userInput.value = '';
+            
+            // 타이핑 인디케이터 표시
+            document.getElementById('typingIndicator').style.display = 'block';
+            
+            // 봇 메시지 요소 생성 (비어있는 상태로)
+            const chatMessages = document.getElementById('chatMessages');
+            const botMessageDiv = document.createElement('div');
+            botMessageDiv.className = 'message bot-message';
+            botMessageDiv.textContent = '';
+            chatMessages.appendChild(botMessageDiv);
+            
+            // SSE 연결
+            const eventSource = new EventSource(`/chat/stream?message=${encodeURIComponent(message)}&session_id=${sessionId}`);
+            
+            eventSource.onmessage = function(event) {
+                if (event.data === '[DONE]') {
+                    // 스트리밍 완료
+                    eventSource.close();
+                    document.getElementById('typingIndicator').style.display = 'none';
+                } else {
+                    // 메시지 조각 추가
+                    botMessageDiv.textContent += event.data;
+                    
+                    // 스크롤을 맨 아래로 이동
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+            };
+            
+            eventSource.onerror = function(error) {
+                console.error('SSE Error:', error);
+                eventSource.close();
+                document.getElementById('typingIndicator').style.display = 'none';
+                if (botMessageDiv.textContent === '') {
+                    botMessageDiv.textContent = '죄송합니다, 응답 처리 중 오류가 발생했습니다.';
+                }
+            };
+        }
+        
+        function appendMessage(content, sender) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender === 'user' ? 'user-message' : 'bot-message'}`;
+            messageDiv.textContent = content;
+            chatMessages.appendChild(messageDiv);
+            
+            // 스크롤을 맨 아래로 이동
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // Enter 키 입력시 메시지 전송
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessageStream();
+            }
+        });
+    </script>
+</body>
+</html>
